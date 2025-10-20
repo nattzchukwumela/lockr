@@ -1,0 +1,23 @@
+lockr-2fa/
+├── prisma/
+│   └── schema.prisma
+├── src/
+│   ├── app/
+│   │   ├── page.tsx               // dashboard
+│   │   ├── auth/
+│   │   │   ├── login/page.tsx
+│   │   │   ├── register/page.tsx
+│   │   └── api/
+│   │       └── totp/
+│   │           ├── generate/route.ts
+│   │           └── verify/route.ts
+│   ├── lib/
+│   │   ├── prisma.ts
+│   │   └── auth.ts                // NextAuth config
+│   ├── components/
+│   │   ├── QRDisplay.tsx
+│   │   ├── CodeDisplay.tsx
+│   │   └── AccountCard.tsx
+├── package.json
+├── .env
+└── README.md
