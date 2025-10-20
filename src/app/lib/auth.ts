@@ -6,7 +6,7 @@ import bcrypt from "bcrypt";
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt" as const },
   providers: [
     CredentialsProvider({
       name: "Credentials",
