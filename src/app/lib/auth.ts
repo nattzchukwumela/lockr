@@ -1,10 +1,10 @@
 import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
-import { prisma } from "./prisma";
+import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
+import { prisma } from "./prisma"; // adjust path if needed
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
@@ -14,8 +14,6 @@ export const authOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-
-    // GitHub
     GitHubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
@@ -30,14 +28,12 @@ export const authOptions = {
         const user = await prisma.user.findUnique({
           where: { email: credentials?.email },
         });
-
         if (!user || !user.password) throw new Error("User not found");
 
         const isValid = await bcrypt.compare(
           credentials!.password,
           user.password,
         );
-
         if (!isValid) throw new Error("Invalid credentials");
 
         return user;
@@ -45,7 +41,15 @@ export const authOptions = {
     }),
   ],
   pages: {
-    signIn: "/auth",
+    signIn: "/auth/signin",
+  },
+  callbacks: {
+    async redirect({ url, baseUrl }) {
+      // After successful login, always go to dashboard
+      if (url.startsWith("/")) return `${baseUrl}/dashboard`;
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/dashboard`;
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

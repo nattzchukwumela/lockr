@@ -7,13 +7,23 @@ function SignIn() {
   const [password, setPassword] = useState("");
   const [isPasswordless, setIsPasswordless] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (isPasswordless) {
+      // Optional: implement email magic link provider later
       console.log("Passwordless login with:", email);
-      // signIn('email', { email })
     } else {
-      console.log("Password login with:", email, password);
-      // signIn('credentials', { email, password })
+      const result = await signIn("credentials", {
+        redirect: true,
+        email,
+        password,
+        callbackUrl: "/dashboard",
+      });
+
+      if (result?.error) {
+        console.error(result.error);
+      }
     }
   };
 
