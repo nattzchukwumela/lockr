@@ -43,7 +43,7 @@ export const authOptions = {
     signIn: "/auth/signin",
   },
   callbacks: {
-    async redirect({ url, baseUrl }) {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       // After successful login, always go to dashboard
       if (url.startsWith("/")) return `${baseUrl}/dashboard`;
       if (new URL(url).origin === baseUrl) return url;

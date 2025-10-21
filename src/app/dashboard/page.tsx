@@ -54,7 +54,7 @@ export default function LockrComponents() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-8 bg-slate-800/50 p-1 rounded-lg inline-flex">
+        <div className="gap-2 mb-8 bg-slate-800/50 p-1 rounded-lg inline-flex">
           <button
             onClick={() => setActiveTab("codes")}
             className={`px-4 py-2 rounded-lg transition-colors ${
