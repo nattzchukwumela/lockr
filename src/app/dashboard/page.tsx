@@ -3,7 +3,6 @@ import { useState } from "react";
 import QRDisplay from "../components/dashboards/QRDisplay";
 import CodeDisplay from "../components/dashboards/CodeDisplay";
 import { AccountCard } from "../components/dashboards/ AccountCard";
-
 // Demo Component with Tabs
 export default function LockrComponents() {
   const [activeTab, setActiveTab] = useState("codes");

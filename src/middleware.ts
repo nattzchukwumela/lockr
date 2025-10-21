@@ -11,7 +11,7 @@ export default withAuth(
       authorized: ({ token }) => !!token, // Allow only if user is authenticated
     },
     pages: {
-      signIn: "/auth", // ✅ valid page config
+      signIn: "/auth/signin", // ✅ valid page config
     },
   },
 );
