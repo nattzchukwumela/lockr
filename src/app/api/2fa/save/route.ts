@@ -27,11 +27,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
     }
 
-    const { accountName, username, secret } = await req.json();
+    const { accountName, secret } = await req.json();
 
-    if (!accountName || !username || !secret) {
+    if (!accountName || !secret) {
       return NextResponse.json(
-        { err: "Missing required fields: accountName, username, secret" },
+        { err: "Missing required fields: accountName, name, secret" },
         { status: 400 },
       );
     }
