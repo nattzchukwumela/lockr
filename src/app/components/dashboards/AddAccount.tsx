@@ -100,7 +100,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         body: JSON.stringify({
           email: formData.email,
           secret: formData.secretKey,
-          AccountName: formData.accountName,
+          accountName: formData.accountName,
         }),
       });
 

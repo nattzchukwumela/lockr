@@ -4,19 +4,45 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-// Optional encryption (symmetric)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY!; // 32 chars (e.g. from crypto.randomBytes(32))
+// Symmetric encryption for TOTP secrets
 const IV_LENGTH = 16;
 
-function encrypt(text: string) {
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(
-    "aes-256-cbc",
-    Buffer.from(ENCRYPTION_KEY),
-    iv,
+// Parse hex key to Buffer (must be 32 bytes for AES-256)
+if (!process.env.ENCRYPTION_KEY) {
+  throw new Error("ENCRYPTION_KEY is not set in environment variables");
+}
+
+const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY, "hex");
+
+// Validate key length
+if (ENCRYPTION_KEY.length !== 32) {
+  throw new Error(
+    `ENCRYPTION_KEY must be 32 bytes (64 hex chars). Current length: ${ENCRYPTION_KEY.length} bytes. ` +
+      `Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`,
   );
-  const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+}
+
+function encrypt(text: string): string {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(text, "utf8"),
+    cipher.final(),
+  ]);
   return iv.toString("hex") + ":" + encrypted.toString("hex");
+}
+
+// You'll need this decrypt function later to read the secrets
+export function decrypt(text: string): string {
+  const parts = text.split(":");
+  const iv = Buffer.from(parts[0], "hex");
+  const encryptedText = Buffer.from(parts[1], "hex");
+  const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  const decrypted = Buffer.concat([
+    decipher.update(encryptedText),
+    decipher.final(),
+  ]);
+  return decrypted.toString("utf8");
 }
 
 export async function POST(req: Request) {
@@ -31,7 +57,7 @@ export async function POST(req: Request) {
 
     if (!accountName || !secret) {
       return NextResponse.json(
-        { err: "Missing required fields: accountName, name, secret" },
+        { err: "Missing required fields: accountName, secret" },
         { status: 400 },
       );
     }
@@ -48,11 +74,11 @@ export async function POST(req: Request) {
     // Encrypt the secret before storing
     const encryptedSecret = encrypt(secret);
 
-    // Use TOTPSecret model, not Account model
+    // Create TOTP secret record
     const totpSecret = await prisma.tOTPSecret.create({
       data: {
         userId: user.id,
-        issuer: accountName, // The service name (GitHub, Google, etc.)
+        issuer: accountName,
         secret: encryptedSecret,
       },
     });
