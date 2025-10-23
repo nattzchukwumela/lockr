@@ -21,6 +21,12 @@ interface AddAccountProps {
 // AddAccount Modal Component
 function AddAccount({ onClose, onAdd }: AddAccountProps) {
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [qrData, setQrData] = useState<{
+    secret: string;
+    qr: string;
+    otpauth: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     accountName: "",
     email: "",
@@ -39,9 +45,44 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1 && formData.accountName && formData.email) {
-      setStep(2);
+      setLoading(true);
+
+      try {
+        // Call the API to get QR code and secret
+        const response = await fetch("/api/2fa/setup", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setQrData({
+            secret: data.data.secret,
+            qr: data.data.qr,
+            otpauth: data.data.otpauth,
+          });
+
+          // Auto-fill the secret key
+          setFormData((prev) => ({
+            ...prev,
+            secretKey: data.data.secret,
+          }));
+
+          setStep(2);
+        } else {
+          alert(data.message || "Failed to generate QR code");
+        }
+      } catch (error) {
+        console.error("Error fetching QR code:", error);
+        alert("Failed to generate QR code. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -70,8 +111,11 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
     }
   };
 
-  const handleScanQR = () => {
-    alert("QR Scanner would open here in a real implementation");
+  const handleManualEntry = () => {
+    setFormData((prev) => ({
+      ...prev,
+      secretKey: "",
+    }));
   };
 
   return (
@@ -82,6 +126,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+            disabled={loading}
           >
             <svg
               className="w-6 h-6"
@@ -108,6 +153,17 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
             style={{ width: `${(step / 2) * 100}%` }}
           />
         </div>
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-white font-medium">Generating QR Code...</p>
+              <p className="text-slate-400 text-sm mt-1">Please wait</p>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-6">
@@ -192,32 +248,19 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">
-                  Add Secret Key
+                  Scan QR Code
                 </h3>
                 <p className="text-slate-400 text-sm">
-                  Enter your secret key or scan a QR code
+                  Scan this code with your authenticator app
                 </p>
               </div>
 
-              <button
-                onClick={handleScanQR}
-                className="w-full px-4 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-white transition-colors flex items-center justify-center gap-2"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                  />
-                </svg>
-                Scan QR Code
-              </button>
+              {/* QR Code Display */}
+              {qrData && (
+                <div className="bg-white p-4 rounded-xl mx-auto w-fit">
+                  <img src={qrData.qr} alt="QR Code" className="w-48 h-48" />
+                </div>
+              )}
 
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-slate-600"></div>
@@ -225,22 +268,60 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                 <div className="flex-1 h-px bg-slate-600"></div>
               </div>
 
+              {/* Manual Entry Key Display */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Secret Key
+                  Manual Entry Key
                 </label>
-                <input
-                  type="text"
-                  name="secretKey"
-                  value={formData.secretKey}
-                  onChange={handleInputChange}
-                  placeholder="Enter your secret key"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="secretKey"
+                    value={formData.secretKey}
+                    onChange={handleInputChange}
+                    placeholder="Enter your secret key"
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    readOnly={!!qrData}
+                  />
+                  {qrData && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(formData.secretKey);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-600 rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      <svg
+                        className="w-4 h-4 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 <p className="text-slate-500 text-xs mt-2">
-                  The secret key is provided by the service you're adding
+                  {qrData
+                    ? "Use this key if you can't scan the QR code"
+                    : "The secret key is provided by the service you're adding"}
                 </p>
               </div>
+
+              {qrData && (
+                <button
+                  onClick={handleManualEntry}
+                  className="w-full text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Enter a different secret key manually
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -250,7 +331,8 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
           {step === 2 && (
             <button
               onClick={handleBack}
-              className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
             >
               Back
             </button>
@@ -258,15 +340,15 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
           {step === 1 ? (
             <button
               onClick={handleNext}
-              disabled={!formData.accountName || !formData.email}
+              disabled={!formData.accountName || !formData.email || loading}
               className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
             >
-              Next
+              {loading ? "Loading..." : "Next"}
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={!formData.secretKey}
+              disabled={!formData.secretKey || loading}
               className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
             >
               Add Account
