@@ -111,6 +111,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         };
 
         onAdd(newAccount);
+        console.log(newAccount);
         onClose();
       }
     } catch (err) {

@@ -1,47 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AddAccount from "./AddAccount";
 import { SECRETKEY } from "@/app/lib/types";
-import { getAllKeys } from "@/app/lib/indexDB";
-
-interface Account {
-  name: string;
-  code: string;
-  icon: string;
-  secretKey: string;
-  type: string;
-  interval: string;
-  id: string;
-  addedDate: string;
-}
+import { addKeys, getAllKeys } from "@/app/lib/indexDB";
 
 // Main CodeDisplay Component
 function CodeDisplay() {
-  const details = [
-    {
-      name: "GitHub",
-      username: "user@email.com",
-      code: "123 456",
-      icon: "G",
-      id: "1",
-    },
-    {
-      name: "Google",
-      username: "user@gmail.com",
-      code: "789 012",
-      icon: "G",
-      id: "2",
-    },
-    { name: "AWS", username: "admin", code: "345 678", icon: "A", id: "3" },
-  ];
-
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [accounts, setAccounts] = useState<SECRETKEY[]>([]);
 
   const handleAddAccount = async (newAccount: SECRETKEY) => {
-    const keys = await getAllKeys();
-    setAccounts(keys);
-    // setAccounts((prev) => [...prev, newAccount]);
+    const key = await addKeys(newAccount);
+    setAccounts((prev) => [...prev, key]);
   };
+
+  useEffect(() => {
+    getAllKeys().then((keys) => {
+      setAccounts(keys);
+    });
+  }, []);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code.replace(/\s/g, ""));
@@ -90,7 +66,7 @@ function CodeDisplay() {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-xl font-bold text-blue-400">
-                    {account.icon}
+                    {/*{account.icon}*/} remember here
                   </span>
                 </div>
                 <div>

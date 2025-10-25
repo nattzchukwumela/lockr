@@ -35,7 +35,7 @@ const openDB = (): Promise<IDBDatabase> => {
   });
 };
 
-const addKeys = async (data: SECRETKEY[]): Promise<void> => {
+const addKeys = async (data: SECRETKEY): Promise<SECRETKEY> => {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
@@ -52,15 +52,13 @@ const addKeys = async (data: SECRETKEY[]): Promise<void> => {
       reject(e);
     };
 
-    data.forEach((key) => {
-      const request = store.add(key);
-      request.onsuccess = () => {
-        console.log(`Added key for ${key.name}`);
-      };
-      request.onerror = (e) => {
-        console.error(`Error adding key for ${key.name}:`, e);
-      };
-    });
+    const request = store.add(data);
+    request.onsuccess = () => {
+      console.log(`Added key for ${data.name}`);
+    };
+    request.onerror = (e) => {
+      console.error(`Error adding key for ${data.name}:`, e);
+    };
   });
 };
 
