@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import AddAccount from "./AddAccount";
+import { SECRETKEY } from "@/app/lib/types";
+import { getAllKeys } from "@/app/lib/indexDB";
 
 interface Account {
   name: string;
-  username: string;
   code: string;
   icon: string;
   secretKey: string;
@@ -34,10 +35,12 @@ function CodeDisplay() {
   ];
 
   const [showAddAccount, setShowAddAccount] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<SECRETKEY[]>([]);
 
-  const handleAddAccount = (newAccount: Account) => {
-    setAccounts((prev) => [...prev, newAccount]);
+  const handleAddAccount = async (newAccount: SECRETKEY) => {
+    const keys = await getAllKeys();
+    setAccounts(keys);
+    // setAccounts((prev) => [...prev, newAccount]);
   };
 
   const handleCopyCode = (code: string) => {
@@ -94,14 +97,14 @@ function CodeDisplay() {
                   <h3 className="text-lg font-semibold text-white">
                     {account.name}
                   </h3>
-                  <p className="text-sm text-slate-400">{account.username}</p>
+                  <p className="text-sm text-slate-400">{account.email}</p>
                 </div>
               </div>
 
               {/* Code Display */}
               <div className="text-right">
                 <div className="text-3xl font-mono font-bold text-white tracking-wider mb-1">
-                  {account.code}
+                  {/*{account.code}*/} "remember to add code logic"
                 </div>
                 {/* Timer Progress */}
                 <div className="w-32 h-1 bg-slate-700 rounded-full overflow-hidden">
@@ -117,7 +120,7 @@ function CodeDisplay() {
             {/* Actions */}
             <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700">
               <button
-                onClick={() => handleCopyCode(account.code)}
+                // onClick={() => handleCopyCode(account.code)}
                 className="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <svg
@@ -136,7 +139,7 @@ function CodeDisplay() {
                 Copy
               </button>
               <button
-                onClick={() => handleDeleteAccount(account.id)}
+                onClick={() => handleDeleteAccount(String(account.id))}
                 className="px-3 py-2 bg-slate-700 hover:bg-red-600 text-white text-sm rounded-lg transition-colors"
               >
                 <svg

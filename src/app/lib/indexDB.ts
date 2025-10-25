@@ -1,11 +1,4 @@
-interface SECRETKEY {
-  id?: number | string;
-  name: string;
-  email: boolean;
-  secret: string;
-  type: string;
-  addedAt: Date;
-}
+import { SECRETKEY } from "./types";
 
 const DB_NAME = "lockrDB";
 const STORE_NAME = "lockr";
