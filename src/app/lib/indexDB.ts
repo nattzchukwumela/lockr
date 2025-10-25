@@ -104,17 +104,21 @@ const deleteKey = async (id: number | string): Promise<void> => {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
-    const tx: IDBTransaction = db.transaction(STORE_NAME, "readwrite");
-    const store: IDBObjectStore = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
 
     const request = store.delete(id);
 
     request.onsuccess = () => {
-      resolve(request.result);
+      console.log(`Deleted key with id: ${id}`);
     };
 
     request.onerror = (e) => {
+      console.error(`Failed to delete key with id: ${id}`, e);
       reject(e);
     };
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
   });
 };
