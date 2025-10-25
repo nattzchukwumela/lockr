@@ -1,5 +1,3 @@
-import { rejects } from "node:assert";
-
 interface SECRETKEY {
   id?: number | string;
   name: string;
@@ -13,12 +11,17 @@ const DB_NAME = "lockrDB";
 const STORE_NAME = "lockr";
 const DB_VERSION = 1;
 
-const openDB = () => {
-  return new Promise<IDBDatabase>((resolve, reject) => {
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = (e) => {
-      console.error(e || "something went wrong");
+      console.error("IndexedDB error:", e);
+      reject(e);
+    };
+
+    request.onsuccess = () => {
+      resolve(request.result);
     };
 
     request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
@@ -30,7 +33,8 @@ const openDB = () => {
           autoIncrement: true,
         });
 
-        store.createIndex("name", "account_name", { unique: true });
+        // match your interface -> "name", not "account_name"
+        store.createIndex("name", "name", { unique: true });
         store.createIndex("email", "email", { unique: false });
         store.createIndex("type", "type", { unique: false });
       }
@@ -47,11 +51,15 @@ const addKeys = async (data: SECRETKEY[]) => {
 
     data.forEach((key) => {
       const request = store.add(key);
-      request.onsuccess = () => {
-        console.log(`Key ${key.id} added successfully`);
-      };
+
       request.onerror = (e) => {
+        reject(e);
         console.error(`Error adding key ${key.id}: ${e}`);
+      };
+
+      request.onsuccess = () => {
+        resolve(request.result);
+        console.log(`Key ${key.id} added successfully`);
       };
     });
   });
