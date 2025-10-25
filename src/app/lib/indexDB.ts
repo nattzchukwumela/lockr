@@ -146,25 +146,24 @@ const deleteAllKeys = async (): Promise<void> => {
   });
 };
 
-const getAllkeys = async (): Promise<void> => {
+const getAllKeys = async (): Promise<SECRETKEY[]> => {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
+    const tx = db.transaction(STORE_NAME, "readonly");
     const store = tx.objectStore(STORE_NAME);
-
     const request = store.getAll();
 
     request.onsuccess = () => {
-      console.log(`Retrieved all keys: ${request.result}`);
+      console.log("Retrieved all keys:", request.result);
+      resolve(request.result as SECRETKEY[]);
     };
 
     request.onerror = (e) => {
-      console.error(`Failed to retrieve all keys`, e);
+      console.error("Failed to retrieve all keys", e);
       reject(e);
     };
 
-    tx.oncomplete = () => resolve();
     tx.onerror = (e) => reject(e);
   });
 };
