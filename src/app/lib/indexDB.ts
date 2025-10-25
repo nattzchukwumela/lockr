@@ -78,12 +78,15 @@ const updateKeyDetails = async (
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
-    const tx: IDBTransaction = db.transaction(STORE_NAME, "readwrite");
-    const store: IDBObjectStore = tx.objectStore(STORE_NAME);
-    const request: IDBRequest = store.put(key);
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+
+    // Ensure the record has the right ID
+    if (!key.id) key.id = id;
+
+    const request = store.put(key);
 
     request.onsuccess = () => {
-      resolve(request.result);
       console.log(`Updated key for ${key.name}`);
     };
 
@@ -91,5 +94,8 @@ const updateKeyDetails = async (
       console.error(`Error updating key for ${key.name}:`, e);
       reject(e);
     };
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
   });
 };
