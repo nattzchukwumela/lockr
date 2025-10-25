@@ -3,6 +3,7 @@ export interface SECRETKEY {
   name: string;
   icon: string;
   email: string;
+  code: string;
   secret: string;
   type: string;
   addedAt: string;

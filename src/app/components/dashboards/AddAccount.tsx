@@ -105,6 +105,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
           icon: initial,
           secret: formData.secretKey,
           type: formData.type,
+          code: "000000",
           interval: formData.interval,
           id: Date.now().toString(),
           addedAt: new Date().toISOString(),

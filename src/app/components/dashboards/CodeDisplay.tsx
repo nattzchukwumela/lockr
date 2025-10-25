@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import AddAccount from "./AddAccount";
 import { SECRETKEY } from "@/app/lib/types";
 import { addKeys, getAllKeys } from "@/app/lib/indexDB";
+import { authenticator } from "otplib";
 
 // Main CodeDisplay Component
 function CodeDisplay() {
@@ -14,9 +15,19 @@ function CodeDisplay() {
   };
 
   useEffect(() => {
-    getAllKeys().then((keys) => {
-      setAccounts(keys);
-    });
+    const refreshCodes = async () => {
+      const allKeys = await getAllKeys();
+      const updated = allKeys.map((acc) => ({
+        ...acc,
+        code: authenticator.generate(acc.secret),
+      }));
+      setAccounts(updated);
+    };
+
+    refreshCodes(); // initial load
+    const interval = setInterval(refreshCodes, 30000); // refresh every 30 seconds
+
+    return () => clearInterval(interval); // cleanup
   }, []);
 
   const handleCopyCode = (code: string) => {
@@ -66,7 +77,7 @@ function CodeDisplay() {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <span className="text-xl font-bold text-blue-400">
-                    {/*{account.icon}*/} remember here
+                    {account.icon}
                   </span>
                 </div>
                 <div>
@@ -80,7 +91,7 @@ function CodeDisplay() {
               {/* Code Display */}
               <div className="text-right">
                 <div className="text-3xl font-mono font-bold text-white tracking-wider mb-1">
-                  {/*{account.code}*/} "remember to add code logic"
+                  {account.code}
                 </div>
                 {/* Timer Progress */}
                 <div className="w-32 h-1 bg-slate-700 rounded-full overflow-hidden">
