@@ -1,6 +1,18 @@
+interface Task {
+  id?: number | string;
+  name: string;
+  email: boolean;
+  type: string;
+  addedAt: Date;
+}
+
+const DB_NAME = "lockrDB";
+const STORE_NAME = "lockr";
+const DB_VERSION = 1;
+
 const openDB = () => {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("lockrDB", 1);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = (e) => {
       console.error(e || "something went wrong");
@@ -9,8 +21,8 @@ const openDB = () => {
     request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
       const db = (e.target as IDBOpenDBRequest).result;
 
-      if (!db.objectStoreNames.contains("lockr")) {
-        const store = db.createObjectStore("lockr", {
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, {
           keyPath: "id",
           autoIncrement: true,
         });
