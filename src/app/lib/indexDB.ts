@@ -132,16 +132,16 @@ const deleteAllKeys = async (): Promise<void> => {
 
     const request = store.clear();
 
-    request.onsuccess = () => {
-      console.log(`Deleted all keys`);
-    };
-
     request.onerror = (e) => {
       console.error(`Failed to delete all keys`, e);
       reject(e);
     };
 
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      console.log("Deleted all keys successfully");
+      resolve();
+    };
+
     tx.onerror = (e) => reject(e);
   });
 };
