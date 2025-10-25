@@ -25,9 +25,12 @@ export default function Home() {
               </div>
               <span className="text-2xl font-bold text-white">Lockr</span>
             </div>
-            <button className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+            <a
+              href="/auth/signin"
+              className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors cursor-pointer"
+            >
               Sign In
-            </button>
+            </a>
           </div>
         </header>
 

@@ -167,3 +167,5 @@ const getAllKeys = async (): Promise<SECRETKEY[]> => {
     tx.onerror = (e) => reject(e);
   });
 };
+
+export { deleteAllKeys, getAllKeys, updateKeyDetails, deleteKey, addKeys };
