@@ -122,3 +122,26 @@ const deleteKey = async (id: number | string): Promise<void> => {
     tx.onerror = (e) => reject(e);
   });
 };
+
+const deleteAllKeys = async (): Promise<void> => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+
+    const request = store.clear();
+
+    request.onsuccess = () => {
+      console.log(`Deleted all keys`);
+    };
+
+    request.onerror = (e) => {
+      console.error(`Failed to delete all keys`, e);
+      reject(e);
+    };
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
+  });
+};
