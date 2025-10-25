@@ -1,7 +1,10 @@
-interface Task {
+import { rejects } from "node:assert";
+
+interface SECRETKEY {
   id?: number | string;
   name: string;
   email: boolean;
+  secret: string;
   type: string;
   addedAt: Date;
 }
@@ -32,5 +35,24 @@ const openDB = () => {
         store.createIndex("type", "type", { unique: false });
       }
     };
+  });
+};
+
+const addKeys = async (data: SECRETKEY[]) => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx: IDBTransaction = db.transaction(STORE_NAME, "readwrite");
+    const store: IDBObjectStore = tx.objectStore(STORE_NAME);
+
+    data.forEach((key) => {
+      const request = store.add(key);
+      request.onsuccess = () => {
+        console.log(`Key ${key.id} added successfully`);
+      };
+      request.onerror = (e) => {
+        console.error(`Error adding key ${key.id}: ${e}`);
+      };
+    });
   });
 };
