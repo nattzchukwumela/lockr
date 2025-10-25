@@ -42,24 +42,30 @@ const openDB = (): Promise<IDBDatabase> => {
   });
 };
 
-const addKeys = async (data: SECRETKEY[]) => {
+const addKeys = async (data: SECRETKEY[]): Promise<void> => {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
-    const tx: IDBTransaction = db.transaction(STORE_NAME, "readwrite");
-    const store: IDBObjectStore = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+
+    tx.oncomplete = () => {
+      console.log("All keys added successfully");
+      resolve();
+    };
+
+    tx.onerror = (e) => {
+      console.error("Transaction failed:", e);
+      reject(e);
+    };
 
     data.forEach((key) => {
       const request = store.add(key);
-
-      request.onerror = (e) => {
-        reject(e);
-        console.error(`Error adding key ${key.id}: ${e}`);
-      };
-
       request.onsuccess = () => {
-        resolve(request.result);
-        console.log(`Key ${key.id} added successfully`);
+        console.log(`Added key for ${key.name}`);
+      };
+      request.onerror = (e) => {
+        console.error(`Error adding key for ${key.name}:`, e);
       };
     });
   });
