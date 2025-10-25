@@ -145,3 +145,26 @@ const deleteAllKeys = async (): Promise<void> => {
     tx.onerror = (e) => reject(e);
   });
 };
+
+const getAllkeys = async (): Promise<void> => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      console.log(`Retrieved all keys: ${request.result}`);
+    };
+
+    request.onerror = (e) => {
+      console.error(`Failed to retrieve all keys`, e);
+      reject(e);
+    };
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
+  });
+};
