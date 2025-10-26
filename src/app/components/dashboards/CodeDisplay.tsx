@@ -1,52 +1,111 @@
 import React, { useEffect, useState } from "react";
 import AddAccount from "./AddAccount";
 import { SECRETKEY } from "@/app/lib/types";
-import { addKeys, getAllKeys } from "@/app/lib/indexDB";
+import { getAllKeys, deleteKey } from "@/app/lib/indexDB";
 import { authenticator } from "otplib";
 
 // Main CodeDisplay Component
 function CodeDisplay() {
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [accounts, setAccounts] = useState<SECRETKEY[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const handleAddAccount = async (newAccount: SECRETKEY) => {
-    const key = await addKeys(newAccount);
-    setAccounts((prev) => [...prev, key]);
+  // Calculate time remaining in current 30-second window
+  const calculateTimeRemaining = (): number => {
+    const now = Math.floor(Date.now() / 1000);
+    const remaining = 30 - (now % 30);
+    return remaining;
   };
 
-  useEffect(() => {
-    const refreshCodes = async () => {
+  // Format code with space in middle (e.g., "123 456")
+  const formatCode = (code: string): string => {
+    return code.slice(0, 3) + " " + code.slice(3);
+  };
+
+  // Load all accounts and refresh codes
+  const refreshCodes = async () => {
+    try {
       const allKeys = await getAllKeys();
       const updated = allKeys.map((acc) => ({
         ...acc,
-        code: authenticator.generate(acc.secret),
+        code: formatCode(authenticator.generate(acc.secret)),
       }));
       setAccounts(updated);
-    };
-
-    refreshCodes(); // initial load
-    const interval = setInterval(refreshCodes, 30000); // refresh every 30 seconds
-
-    return () => clearInterval(interval); // cleanup
-  }, []);
-
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code.replace(/\s/g, ""));
-    // You could add a toast notification here
+    } catch (error) {
+      console.error("Error loading accounts:", error);
+    }
   };
 
-  const handleDeleteAccount = (id: string) => {
-    setAccounts((prev) => prev.filter((account) => account.id !== id));
+  // Handle adding new account
+  const handleAddAccount = async () => {
+    // Refresh all accounts after adding
+    await refreshCodes();
+    setShowAddAccount(false);
+  };
+
+  // Initial load
+  useEffect(() => {
+    refreshCodes();
+  }, []);
+
+  // Timer effect - updates every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = calculateTimeRemaining();
+      setTimeRemaining(remaining);
+
+      // Refresh codes when timer resets (at 30 seconds)
+      if (remaining === 30) {
+        refreshCodes();
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleCopyCode = (code: string, id: string) => {
+    navigator.clipboard.writeText(code.replace(/\s/g, ""));
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000); // Reset after 2 seconds
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    try {
+      await deleteKey(Number(id));
+      setAccounts((prev) => prev.filter((account) => account.id !== id));
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Please try again.");
+    }
+  };
+
+  // Calculate progress percentage (0-100)
+  const progressPercentage = (timeRemaining / 30) * 100;
+
+  // Determine color based on time remaining
+  const getProgressColor = (): string => {
+    if (timeRemaining > 20) return "bg-blue-500";
+    if (timeRemaining > 10) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Your Codes</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-white">Your Codes</h2>
+          {accounts.length > 0 && (
+            <p className="text-sm text-slate-400 mt-1">
+              {accounts.length} account{accounts.length !== 1 ? "s" : ""} •
+              Refreshes in {timeRemaining}s
+            </p>
+          )}
+        </div>
         <button
           onClick={() => setShowAddAccount(true)}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl"
         >
           <svg
             className="w-4 h-4"
@@ -70,13 +129,13 @@ function CodeDisplay() {
         accounts.map((account) => (
           <div
             key={account.id}
-            className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-5 hover:border-blue-500/50 transition-colors"
+            className="bg-slate-800/50 backdrop-blur rounded-xl border border-slate-700 p-5 hover:border-blue-500/50 transition-all duration-300 shadow-lg"
           >
             <div className="flex items-center justify-between">
               {/* Account Info */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-xl font-bold text-blue-400">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <span className="text-xl font-bold text-white">
                     {account.icon}
                   </span>
                 </div>
@@ -90,47 +149,75 @@ function CodeDisplay() {
 
               {/* Code Display */}
               <div className="text-right">
-                <div className="text-3xl font-mono font-bold text-white tracking-wider mb-1">
+                <div className="text-3xl font-mono font-bold text-white tracking-wider mb-2">
                   {account.code}
                 </div>
                 {/* Timer Progress */}
-                <div className="w-32 h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div className="w-32 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 transition-all duration-1000"
-                    style={{ width: "60%" }}
+                    className={`h-full ${getProgressColor()} transition-all duration-1000 ease-linear`}
+                    style={{ width: `${progressPercentage}%` }}
                   ></div>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">18s remaining</p>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  {timeRemaining}s remaining
+                </p>
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700">
               <button
-                // onClick={() => handleCopyCode(account.code)}
-                className="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
+                onClick={() => handleCopyCode(account.code, account.id)}
+                className={`flex-1 px-3 py-2 ${
+                  copied === account.id
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-slate-700 hover:bg-slate-600"
+                } text-white text-sm rounded-lg transition-all duration-200 flex items-center justify-center gap-2`}
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                Copy
+                {copied === account.id ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Copy
+                  </>
+                )}
               </button>
               <button
                 onClick={() => handleDeleteAccount(String(account.id))}
-                className="px-3 py-2 bg-slate-700 hover:bg-red-600 text-white text-sm rounded-lg transition-colors"
+                className="px-3 py-2 bg-slate-700 hover:bg-red-600 text-white text-sm rounded-lg transition-all duration-200 group"
+                title="Delete account"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-4 h-4 group-hover:scale-110 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -173,7 +260,7 @@ function CodeDisplay() {
           </p>
           <button
             onClick={() => setShowAddAccount(true)}
-            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
           >
             Add Your First Account
           </button>
