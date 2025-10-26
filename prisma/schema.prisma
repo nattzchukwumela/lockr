@@ -36,19 +36,18 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String? @db.Text
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
-
 
 model Session {
   id           String   @id @default(cuid())
@@ -70,7 +69,7 @@ model TOTPSecret {
   id        String   @id @default(cuid())
   userId    String
   issuer    String
-  secret    String
+  secret    String   @unique
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }
