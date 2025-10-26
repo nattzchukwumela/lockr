@@ -87,7 +87,7 @@ const updateKeyDetails = async (id: string, key: SECRETKEY): Promise<void> => {
   });
 };
 
-const deleteKey = async (id: number | string): Promise<void> => {
+const deleteKey = async (id: string): Promise<void> => {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {

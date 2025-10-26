@@ -25,7 +25,9 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
     type: "TOTP",
     interval: "30",
   });
+
   const genId = Date.now().toString();
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -89,12 +91,9 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
     setError(null);
 
     try {
-      // Save to backend first
       const res = await fetch("/api/2fa/save", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: genId,
           email: formData.email,
@@ -107,11 +106,10 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
       if (!res.ok) {
         setError(data.err || "Failed to save account");
-
+        setLoading(false);
         return;
       }
 
-      // Create account object
       const initial = formData.accountName.charAt(0).toUpperCase();
       const newAccount: SECRETKEY = {
         name: formData.accountName,
@@ -125,17 +123,17 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         addedAt: new Date().toISOString(),
       };
 
-      // Save to IndexedDB
       await addKeys(newAccount);
 
-      // Call parent's onAdd to refresh the list
-      await onAdd();
+      // Close modal first, reset state immediately
+      onClose();
+      setLoading(false);
 
-      // Success - modal will be closed by parent
+      // Refresh parent asynchronously
+      onAdd();
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   };

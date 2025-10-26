@@ -87,7 +87,7 @@ function CodeDisplay() {
         return;
       }
 
-      await deleteKey(Number(id));
+      deleteKey(String(id));
       setAccounts((prev) => prev.filter((acc) => acc.id !== id));
 
       console.log("Account deleted successfully.");
