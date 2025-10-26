@@ -3,6 +3,7 @@ import AddAccount from "./AddAccount";
 import { SECRETKEY } from "@/app/lib/types";
 import { getAllKeys, deleteKey } from "@/app/lib/indexDB";
 import { authenticator } from "otplib";
+import { NextResponse } from "next/server";
 
 // Main CodeDisplay Component
 function CodeDisplay() {
@@ -70,10 +71,26 @@ function CodeDisplay() {
     setTimeout(() => setCopied(null), 2000); // Reset after 2 seconds
   };
 
-  const handleDeleteAccount = async (id: string) => {
+  const handleDeleteAccount = async (id: string, secret: string) => {
     try {
-      await deleteKey(Number(id));
-      setAccounts((prev) => prev.filter((account) => account.id !== id));
+      const res = await fetch("/api/2fa/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ secret }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(
+          data.message ||
+            data.error ||
+            "Failed to delete account. Please try again.",
+        );
+      } else {
+        await deleteKey(Number(id));
+        setAccounts((prev) => prev.filter((account) => account.id !== id));
+      }
     } catch (error) {
       console.error("Error deleting account:", error);
       alert("Failed to delete account. Please try again.");
@@ -212,7 +229,9 @@ function CodeDisplay() {
                 )}
               </button>
               <button
-                onClick={() => handleDeleteAccount(String(account.id))}
+                onClick={() =>
+                  handleDeleteAccount(String(account.id), account.secret)
+                }
                 className="px-3 py-2 bg-slate-700 hover:bg-red-600 text-white text-sm rounded-lg transition-all duration-200 group"
                 title="Delete account"
               >
