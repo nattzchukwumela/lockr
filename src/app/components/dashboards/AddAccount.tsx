@@ -107,7 +107,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
       if (!res.ok) {
         setError(data.err || "Failed to save account");
-        setLoading(false);
+
         return;
       }
 
@@ -135,6 +135,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred. Please try again.");
+    } finally {
       setLoading(false);
     }
   };

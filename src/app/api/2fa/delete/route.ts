@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function DELETE(req: Request) {
   try {
-    const { secretKey } = await req.json();
+    const { id } = await req.json();
 
     const session = await getServerSession(authOptions);
 
@@ -13,7 +13,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!secretKey) {
+    if (!id) {
       return NextResponse.json(
         { error: "Secret is required" },
         { status: 400 },
@@ -22,7 +22,7 @@ export async function DELETE(req: Request) {
 
     // Delete secret
     const deleted = await prisma.tOTPSecret.delete({
-      where: { secret: String(secretKey) },
+      where: { id: id },
     });
 
     return NextResponse.json(

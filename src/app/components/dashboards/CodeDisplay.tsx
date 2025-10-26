@@ -70,14 +70,14 @@ function CodeDisplay() {
     setTimeout(() => setCopied(null), 2000); // Reset after 2 seconds
   };
 
-  const handleDeleteAccount = async (id: string | number, secret: string) => {
+  const handleDeleteAccount = async (id: string) => {
     try {
       const res = await fetch("/api/2fa/delete", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ secretKey: secret }),
+        body: JSON.stringify({ id }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -229,9 +229,7 @@ function CodeDisplay() {
                 )}
               </button>
               <button
-                onClick={() =>
-                  handleDeleteAccount(String(account.id), account.secret)
-                }
+                onClick={() => handleDeleteAccount(String(account.id))}
                 className="px-3 py-2 bg-slate-700 hover:bg-red-600 text-white text-sm rounded-lg transition-all duration-200 group"
                 title="Delete account"
               >
