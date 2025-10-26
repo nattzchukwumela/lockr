@@ -159,9 +159,9 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 relative">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4 relative">
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors disabled:opacity-50"
@@ -182,8 +182,8 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
               />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold text-white">Add New Account</h2>
-          <p className="text-blue-100 mt-1">Step {step} of 2</p>
+          <h2 className="text-xl font-bold text-white">Add New Account</h2>
+          <p className="text-blue-100 mt-0.5 text-sm">Step {step} of 2</p>
         </div>
 
         {/* Progress Bar */}
@@ -196,7 +196,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
         {/* Error Message */}
         {error && (
-          <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg flex items-start gap-2">
+          <div className="mx-4 mt-3 p-2.5 bg-red-500/20 border border-red-500 rounded-lg flex items-start gap-2">
             <svg
               className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
               fill="none"
@@ -228,9 +228,9 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         )}
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 overflow-y-auto flex-1">
           {step === 1 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Account Name <span className="text-red-400">*</span>
@@ -241,7 +241,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   value={formData.accountName}
                   onChange={handleInputChange}
                   placeholder="e.g., GitHub, Google, AWS"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={loading}
                 />
               </div>
@@ -256,7 +256,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="user@example.com"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={loading}
                 />
               </div>
@@ -269,7 +269,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   name="type"
                   value={formData.type}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={loading}
                 >
                   <option value="TOTP">TOTP (Time-based)</option>
@@ -286,7 +286,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                     name="interval"
                     value={formData.interval}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     disabled={loading}
                   >
                     <option value="30">30 seconds</option>
@@ -296,11 +296,11 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="text-center py-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
+            <div className="space-y-3">
+              <div className="text-center py-3">
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-500/20 rounded-full mb-3">
                   <svg
-                    className="w-8 h-8 text-blue-400"
+                    className="w-7 h-7 text-blue-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -313,24 +313,24 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-base font-semibold text-white mb-1.5">
                   Scan QR Code
                 </h3>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-400 text-xs">
                   Scan this code with your authenticator app
                 </p>
               </div>
 
               {/* QR Code Display */}
               {qrData && (
-                <div className="bg-white p-4 rounded-xl mx-auto w-fit shadow-lg">
-                  <img src={qrData.qr} alt="QR Code" className="w-48 h-48" />
+                <div className="bg-white p-3 rounded-xl mx-auto w-fit shadow-lg">
+                  <img src={qrData.qr} alt="QR Code" className="w-40 h-40" />
                 </div>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-slate-600"></div>
-                <span className="text-slate-500 text-sm">OR</span>
+                <span className="text-slate-500 text-xs">OR</span>
                 <div className="flex-1 h-px bg-slate-600"></div>
               </div>
 
@@ -346,7 +346,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                     value={formData.secretKey}
                     onChange={handleInputChange}
                     placeholder="Enter your secret key"
-                    className="w-full px-4 py-3 pr-12 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm transition-all"
+                    className="w-full px-3 py-2.5 pr-12 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-xs transition-all"
                     readOnly={!!qrData}
                   />
                   {qrData && (
@@ -393,7 +393,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 bg-slate-900/50 border-t border-slate-700 flex gap-3">
+        <div className="p-4 bg-slate-900/50 border-t border-slate-700 flex gap-2 flex-shrink-0">
           {step === 2 && (
             <button
               onClick={handleBack}
