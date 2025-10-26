@@ -1,16 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import { SECRETKEY } from "@/app/lib/types";
+import { addKeys } from "@/app/lib/indexDB";
 
 interface AddAccountProps {
   onClose: () => void;
-  onAdd: (account: SECRETKEY) => void;
+  onAdd: () => Promise<void>;
 }
 
 // AddAccount Modal Component
 function AddAccount({ onClose, onAdd }: AddAccountProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [qrData, setQrData] = useState<{
     secret: string;
     qr: string;
@@ -32,11 +34,13 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
       ...prev,
       [name]: value,
     }));
+    setError(null); // Clear error on input change
   };
 
   const handleNext = async () => {
     if (step === 1 && formData.accountName && formData.email) {
       setLoading(true);
+      setError(null);
 
       try {
         // Call the API to get QR code and secret
@@ -64,11 +68,11 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
           setStep(2);
         } else {
-          alert(data.message || "Failed to generate QR code");
+          setError(data.message || "Failed to generate QR code");
         }
       } catch (error) {
         console.error("Error fetching QR code:", error);
-        alert("Failed to generate QR code. Please try again.");
+        setError("Failed to generate QR code. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -77,10 +81,15 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
   const handleBack = () => {
     setStep(1);
+    setError(null);
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
+      // Save to backend first
       const res = await fetch("/api/2fa/save", {
         method: "POST",
         headers: {
@@ -93,30 +102,39 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
-        alert(data.err);
-      } else {
-        const initial = formData.accountName.charAt(0).toUpperCase();
-
-        const newAccount: SECRETKEY = {
-          name: formData.accountName,
-          email: formData.email,
-          icon: initial,
-          secret: formData.secretKey,
-          type: formData.type,
-          code: "000000",
-          interval: formData.interval,
-          id: Date.now().toString(),
-          addedAt: new Date().toISOString(),
-        };
-
-        onAdd(newAccount);
-        console.log(newAccount);
-        onClose();
+        setError(data.err || "Failed to save account");
+        setLoading(false);
+        return;
       }
+
+      // Create account object
+      const initial = formData.accountName.charAt(0).toUpperCase();
+      const newAccount: SECRETKEY = {
+        name: formData.accountName,
+        email: formData.email,
+        icon: initial,
+        secret: formData.secretKey,
+        type: formData.type,
+        code: "000 000",
+        interval: formData.interval,
+        id: Date.now().toString(),
+        addedAt: new Date().toISOString(),
+      };
+
+      // Save to IndexedDB
+      await addKeys(newAccount);
+
+      // Call parent's onAdd to refresh the list
+      await onAdd();
+
+      // Success - modal will be closed by parent
     } catch (err) {
-      console.error(err || "Unknown error");
+      console.error(err);
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -125,17 +143,30 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
       ...prev,
       secretKey: "",
     }));
+    setQrData(null);
+  };
+
+  const handleClose = () => {
+    if (!loading) {
+      onClose();
+    }
+  };
+
+  const handleCopySecret = () => {
+    navigator.clipboard.writeText(formData.secretKey);
+    // You could add a toast notification here
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
       <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 relative">
           <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+            onClick={handleClose}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors disabled:opacity-50"
             disabled={loading}
+            aria-label="Close modal"
           >
             <svg
               className="w-6 h-6"
@@ -163,12 +194,34 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
           />
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg flex items-start gap-2">
+            <svg
+              className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="text-sm text-red-300">{error}</p>
+          </div>
+        )}
+
         {/* Loading Overlay */}
         {loading && (
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-white font-medium">Generating QR Code...</p>
+              <p className="text-white font-medium">
+                {step === 1 ? "Generating QR Code..." : "Saving Account..."}
+              </p>
               <p className="text-slate-400 text-sm mt-1">Please wait</p>
             </div>
           </div>
@@ -180,7 +233,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Account Name
+                  Account Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -188,13 +241,14 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   value={formData.accountName}
                   onChange={handleInputChange}
                   placeholder="e.g., GitHub, Google, AWS"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  disabled={loading}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Email/Username
+                  Email/Username <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -202,7 +256,8 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="user@example.com"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  disabled={loading}
                 />
               </div>
 
@@ -214,7 +269,8 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                   name="type"
                   value={formData.type}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  disabled={loading}
                 >
                   <option value="TOTP">TOTP (Time-based)</option>
                   <option value="HOTP">HOTP (Counter-based)</option>
@@ -230,7 +286,8 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                     name="interval"
                     value={formData.interval}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={loading}
                   >
                     <option value="30">30 seconds</option>
                     <option value="60">60 seconds</option>
@@ -266,7 +323,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
 
               {/* QR Code Display */}
               {qrData && (
-                <div className="bg-white p-4 rounded-xl mx-auto w-fit">
+                <div className="bg-white p-4 rounded-xl mx-auto w-fit shadow-lg">
                   <img src={qrData.qr} alt="QR Code" className="w-48 h-48" />
                 </div>
               )}
@@ -289,16 +346,15 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                     value={formData.secretKey}
                     onChange={handleInputChange}
                     placeholder="Enter your secret key"
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-4 py-3 pr-12 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm transition-all"
                     readOnly={!!qrData}
                   />
                   {qrData && (
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(formData.secretKey);
-                      }}
+                      onClick={handleCopySecret}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-600 rounded-lg transition-colors"
                       title="Copy to clipboard"
+                      type="button"
                     >
                       <svg
                         className="w-4 h-4 text-slate-400"
@@ -327,6 +383,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
                 <button
                   onClick={handleManualEntry}
                   className="w-full text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  type="button"
                 >
                   Enter a different secret key manually
                 </button>
@@ -342,6 +399,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
               onClick={handleBack}
               disabled={loading}
               className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+              type="button"
             >
               Back
             </button>
@@ -350,7 +408,8 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
             <button
               onClick={handleNext}
               disabled={!formData.accountName || !formData.email || loading}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-xl"
+              type="button"
             >
               {loading ? "Loading..." : "Next"}
             </button>
@@ -358,9 +417,10 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
             <button
               onClick={handleSubmit}
               disabled={!formData.secretKey || loading}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-xl"
+              type="button"
             >
-              Add Account
+              {loading ? "Saving..." : "Add Account"}
             </button>
           )}
         </div>
