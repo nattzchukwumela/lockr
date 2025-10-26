@@ -123,7 +123,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         addedAt: new Date().toISOString(),
       };
 
-      await addKeys(newAccount);
+      addKeys(newAccount);
 
       // Close modal first, reset state immediately
       onClose();
