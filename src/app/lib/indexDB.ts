@@ -44,7 +44,6 @@ const addKeys = async (data: SECRETKEY): Promise<SECRETKEY> => {
 
     tx.oncomplete = () => {
       console.log("All keys added successfully");
-      resolve();
     };
 
     tx.onerror = (e) => {
@@ -62,10 +61,7 @@ const addKeys = async (data: SECRETKEY): Promise<SECRETKEY> => {
   });
 };
 
-const updateKeyDetails = async (
-  id: number | string,
-  key: SECRETKEY,
-): Promise<void> => {
+const updateKeyDetails = async (id: string, key: SECRETKEY): Promise<void> => {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {

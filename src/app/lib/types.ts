@@ -1,5 +1,5 @@
 export interface SECRETKEY {
-  id?: number | string;
+  id: string;
   name: string;
   icon: string;
   email: string;
