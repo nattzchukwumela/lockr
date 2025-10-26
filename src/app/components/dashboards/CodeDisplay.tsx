@@ -71,29 +71,30 @@ function CodeDisplay() {
     setTimeout(() => setCopied(null), 2000); // Reset after 2 seconds
   };
 
-  const handleDeleteAccount = async (id: string, secret: string) => {
+  const handleDeleteAccount = async (id: string | number, secret: string) => {
     try {
       const res = await fetch("/api/2fa/delete", {
-        method: "POST",
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ secret }),
       });
+
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json();
-        alert(
-          data.message ||
-            data.error ||
-            "Failed to delete account. Please try again.",
-        );
-      } else {
-        await deleteKey(Number(id));
-        setAccounts((prev) => prev.filter((account) => account.id !== id));
+        alert(data.error || "Failed to delete account. Please try again.");
+        return;
       }
+
+      await deleteKey(Number(id));
+      setAccounts((prev) => prev.filter((acc) => acc.id !== id));
+
+      console.log("Account deleted successfully.");
     } catch (error) {
       console.error("Error deleting account:", error);
-      alert("Failed to delete account. Please try again.");
+      alert("Something went wrong. Please try again.");
     }
   };
 
