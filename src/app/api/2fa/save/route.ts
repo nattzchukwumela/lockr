@@ -53,9 +53,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
     }
 
-    const { accountName, secret } = await req.json();
+    const { accountName, secret, id } = await req.json();
 
-    if (!accountName || !secret) {
+    if (!accountName || !secret || !id) {
       return NextResponse.json(
         { err: "Missing required fields: accountName, secret" },
         { status: 400 },
@@ -77,6 +77,7 @@ export async function POST(req: Request) {
     // Create TOTP secret record
     const totpSecret = await prisma.tOTPSecret.create({
       data: {
+        id,
         userId: user.id,
         issuer: accountName,
         secret: encryptedSecret,

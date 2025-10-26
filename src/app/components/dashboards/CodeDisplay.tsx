@@ -3,7 +3,6 @@ import AddAccount from "./AddAccount";
 import { SECRETKEY } from "@/app/lib/types";
 import { getAllKeys, deleteKey } from "@/app/lib/indexDB";
 import { authenticator } from "otplib";
-import { NextResponse } from "next/server";
 
 // Main CodeDisplay Component
 function CodeDisplay() {
@@ -78,7 +77,7 @@ function CodeDisplay() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ secret }),
+        body: JSON.stringify({ secretKey: secret }),
       });
 
       const data = await res.json().catch(() => ({}));

@@ -25,7 +25,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
     type: "TOTP",
     interval: "30",
   });
-
+  const genId = Date.now().toString();
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -96,6 +96,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          id: genId,
           email: formData.email,
           secret: formData.secretKey,
           accountName: formData.accountName,
@@ -120,7 +121,7 @@ function AddAccount({ onClose, onAdd }: AddAccountProps) {
         type: formData.type,
         code: "000 000",
         interval: formData.interval,
-        id: Date.now().toString(),
+        id: genId,
         addedAt: new Date().toISOString(),
       };
 

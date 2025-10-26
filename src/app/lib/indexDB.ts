@@ -142,7 +142,6 @@ const getAllKeys = async (): Promise<SECRETKEY[]> => {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      console.log("Retrieved all keys:", request.result);
       resolve(request.result as SECRETKEY[]);
     };
 
